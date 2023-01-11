@@ -1,12 +1,17 @@
 from aiogram import Bot, Dispatcher, types
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher.filters import Text
 from aiogram.utils import executor
+from handlers import create_space_handlers
 
 from services.botAPI import bot_service
+
+storage = MemoryStorage()
 
 BOT_TOKEN = '5960706975:AAGec02BckR7g3ZE5Gl5VCnRUit7LQdeZKw'
 
 bot = Bot(BOT_TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher(bot, storage=storage)
 
 
 async def startup(_):
@@ -27,24 +32,40 @@ async def help_cmd(msg: types.Message):
         user_info['name'] += f" | @{msg.from_user.username}"
 
     user = bot_service.get_user_id(user_info)
-    print(user)
 
-    await msg.answer(f"Здравствуйте {user['name']}")
+    ikb = types.InlineKeyboardMarkup(row_width=1)
+    ikb.add(types.InlineKeyboardButton("Начать работу со SPACE'ами", callback_data=f"start_{user['id']}"))
 
+    await msg.answer(f"Здравствуйте, {user['name']}", reply_markup=ikb)
 
 @dp.message_handler(commands=['help'])
 async def start_cmd(msg: types.Message):
-    inline_kb = types.InlineKeyboardMarkup(row_width=1)
-    user_spaces_response = bot_service.get_user_spaces(msg.from_user.id)
-    print(user_spaces_response['results'])
+    pass
 
-    for space in user_spaces_response['results']:
+@dp.callback_query_handler(Text(contains='start'))
+async def start_work(callback: types.CallbackQuery):
+    user_id = callback.data.split('_')[-1]
+    inline_kb = types.InlineKeyboardMarkup(row_width=1)
+    user_spaces_response = bot_service.get_user_spaces(user_id)
+    print(user_spaces_response)
+    user_grade = {
+        'A': 'Admin user',
+        'C': 'Casual user',
+        'M': 'Master user'
+    }
+
+    for space in user_spaces_response['user_space']:
         inline_kb.add(
-            types.InlineKeyboardButton(space['title'])
+            types.InlineKeyboardButton(f"{space['space']} | {user_grade[space['grade']]}",
+                                       callback_data=f"userspace_{user_id}_{space['space']}_"
+                                                     f"{space['grade']}_{space['is_banned']}")
         )
 
-    inline_kb.add(types.InlineKeyboardButton('Создать новый SPACE', callback_data='create_new_space'))
-    await msg.answer('Выберите SPACE, с которым хотите начать работу', reply_markup=inline_kb)
+    inline_kb.add(types.InlineKeyboardButton('Создать новый SPACE', callback_data=f"create_space_{user_id}"))
+    await callback.message.answer('Выберите SPACE, с которым хотите начать работу', reply_markup=inline_kb)
+    await callback.answer()
 
+
+create_space_handlers.register_create_space_handlers(dp)
 
 executor.start_polling(dp, skip_updates=True, on_startup=startup)

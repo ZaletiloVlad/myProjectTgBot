@@ -16,8 +16,13 @@ class BotAPIService:
     #     return response.json()
 
 
-    def get_user_spaces(self, user_tg_id: int) -> None:
-        response = requests.get(f"{self.base_url}users/{user_tg_id}/")
+    def get_user_spaces(self, user_id: int) -> None:
+        response = requests.get(f"{self.base_url}users/{user_id}/")
+        response.raise_for_status()
+        return response.json()
+
+    def create_space(self, new_space_data: dict):
+        response = requests.post(f"{self.base_url}spaces/space_create/", json=new_space_data)
         response.raise_for_status()
         return response.json()
 
