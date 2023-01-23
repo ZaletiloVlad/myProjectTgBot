@@ -68,13 +68,13 @@ async def show_my_spending(callback: types.CallbackQuery):
 
     for expense in expenses_response:
         expenses_data[expense['category']] = float(expenses_data.get(expense['category'], 0)) + float(expense['expense'])
-    print(expenses_data)
+
     response = ''
     currency = expenses_response[0]['currency']
     total = 0
 
     for key, value in expenses_data.items():
-        response += f"- {key}: {value} {currency}\n\n"
+        response += f"- {key}: {round(value, 2)} {currency}\n\n"
         total += value
 
     response += f"Всего: {round(total, 2)} {currency}"
@@ -113,7 +113,7 @@ async def show_whole_spending(callback: types.CallbackQuery):
     total = 0
 
     for key, value in expenses_data.items():
-        response += f"- {key}: {value} {currency}\n\n"
+        response += f"- {key}: {round(value, 2)} {currency}\n\n"
         total += value
 
     response += f"Всего: {round(total, 2)} {currency}"

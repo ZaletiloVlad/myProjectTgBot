@@ -27,9 +27,11 @@ async def startup(_):
 async def cancel_cmd(msg: types.Message, state: FSMContext):
     current_state = await state.get_state()
     if current_state is None:
+        await msg.delete()
         return
     await state.finish()
     await msg.answer('Произведена отмена')
+    await msg.delete()
 
 @dp.message_handler(commands=['help'])
 async def help_cmd(msg: types.Message):
@@ -41,6 +43,9 @@ async def help_cmd(msg: types.Message):
 
 @dp.message_handler(commands=['start'])
 async def start_cmd(msg: types.Message):
+
+    await msg.delete()
+
     user_info = {
         'name': msg.from_user.first_name,
         'telegram_id': msg.from_user.id,
@@ -119,18 +124,18 @@ async def add_category_title(msg: types.Message, state: FSMContext):
 #
     if len(join_space_response) == 1:
         if join_space_response['text'] =='Invalid code':
-            await msg.reply(f"Срок действия этого реферального кода истек.\nАдминистратору необходимо " 
+            await msg.answer(f"Срок действия этого реферального кода истек.\nАдминистратору необходимо " 
                             f"сгенерировать новый код подключения!", reply_markup=return_kb(user_id))
             await state.finish()
         else:
-            await msg.reply(f"Такого реферального кода не существует. Попробуйте еще раз", reply_markup=return_kb(user_id))
+            await msg.answer(f"Такого реферального кода не существует. Попробуйте еще раз", reply_markup=return_kb(user_id))
             await state.finish()
 
     elif len(join_space_response) == 2:
-            await msg.reply(f'Вы уже находитесь в "{join_space_response["space"]}"', reply_markup=return_kb(user_id))
+            await msg.answer(f'Вы уже находитесь в "{join_space_response["space"]}"', reply_markup=return_kb(user_id))
             await state.finish()
     else:
-        await msg.reply(f'Вы присоединились к "{join_space_response["space"]}"', reply_markup=return_kb(user_id))
+        await msg.answer(f'Вы присоединились к "{join_space_response["space"]}"', reply_markup=return_kb(user_id))
         await state.finish()
 
 create_space_handlers.register_create_space_handlers(dp)
@@ -142,6 +147,16 @@ create_category_handlers.register_create_category_handlers(dp)
 delete_space_handlers.register_delete_space_handlers(dp)
 make_spending_handlers.register_make_spending_handlers(dp)
 show_spending_history.register_show_users_handlers(dp)
+
+@dp.message_handler()
+@dp.message_handler(state='*')
+async def trouble(msg: types.Message):
+    await msg.answer('Если у Вас возникли проблемы, выполните следуующие действия:\n\n'
+                     '1. Напишите слово "отмена" (или "/отмена")\n'
+                     '2. Введите команду /start для перезапуска бота\n\n'
+                     'Важно: Всегда работайте исключительно с последним сообщением, отправленным Вам ботом!!!')
+    await msg.delete()
+
 
 executor.start_polling(dp, skip_updates=True, on_startup=startup)
 
